@@ -20,7 +20,7 @@ class RegressionAnalysis:
         input_data: a pandas dataframe with the Xs and y
         model_type: 'linear-linear', 'log-linear', 'linear-log' or 'log-log'
         has_const: Does the linear regression model have constant variable?
-        ad_channels
+        ad_channels.
         '''
 
         self.input_data = input_data

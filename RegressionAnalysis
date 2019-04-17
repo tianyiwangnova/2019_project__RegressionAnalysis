@@ -1,0 +1,78 @@
+class RegressionAnalysis:
+
+    import pandas as pd
+    import numpy as np
+    import itertools
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    sns.set(style="darkgrid")
+    sns.set(font_scale=1.5)
+
+    def __init__(self,
+                 input_data: pd.DataFrame,
+                 model_type: str,
+                 has_const: int,
+                 metrics: str,
+                 ad_channels: list = None,
+                 transformation_rate: float = 0.8
+                 ):
+        '''
+        input_data: a pandas dataframe with the Xs and y
+        model_type: 'linear-linear', 'log-linear', 'linear-log' or 'log-log'
+        has_const: Does the linear regression model have constant variable?
+        ad_channels
+        '''
+
+        self.input_data = input_data
+        self.model_type = model_type
+        self.has_const = has_const
+        self.ad_channels = ad_channels
+        self.transformation_rate = transformation_rate
+        self.metrics = metrics
+        self.X = None
+        self.y = None
+
+    def ad_stock_transformation(self, array: list) -> pd.Series:
+        '''
+        ad stock transformation for one array
+        example: the investment we have for the first month will keep 80% of the effect in the second month and 80% * 80% in the 3rd and so on
+        '''
+        result = []
+        current_stock = 0
+        for v in array:
+            current_stock = current_stock * self.transformation_rate + v
+            result.append(current_stock)
+        return pd.Series(result)
+
+    def adstock_transformation_table(self):
+        '''
+        adstock transformation for all marketing spending columns
+        '''
+        self.input_data[self.ad_channels] = self.input_data[self.ad_channels].apply(self.ad_stock_transformation, axis = 0)
+
+    def regression_prep(self):
+        '''
+        :return:
+        X: a pandas dataframe of the X matrix. Will add a const column (a column of 1) if the user wants intercept in the regression model
+        '''
+        self.X = self.input_data[[c for c in self.input_data.columns if c != self.metrics]]
+        self.y = self.input_data[self.metrics]
+
+        if self.model_type == "log-linear":
+            self.y = np.log(self.input_data[self.metrics])
+        if self.model_type == "linear-log":
+            self.X = self.X.apply(np.log)
+        if self.model_type == "log-log":
+            self.y = np.log(self.input_data[self.metrics])
+            self.X = self.X.apply(np.log)
+
+        if self.has_const == 1:
+            self.X['const'] = 1
+
+
+
+
+
+
+
+

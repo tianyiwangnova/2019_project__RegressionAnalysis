@@ -14,7 +14,7 @@ class RegressionAnalysis:
                  has_const: int,
                  metrics: str,
                  ad_channels: list = None,
-                 transformation_rate: float = 0.8,
+                 transformation_rate: float = None,
                  p_value_threshold = 0.1
                  ):
         '''
@@ -25,12 +25,19 @@ class RegressionAnalysis:
         ad_channels: Optional; a list of ad_channels (if the class is used for marketing mix modeling); e.g. ['tv', 'radio', 'social']
         transformation_rate: ad spend discount rate for ad stock transformation
         p_value_threshold: this is only for plotting purpose :) For distinguish significant coefficients from non-significant coefficients
+
+        if the user wants to do adstock transformation, we will do it at the initial stage
         '''
-        self.input_data = input_data
+        self.transformation_rate = transformation_rate
+        self.ad_channels = ad_channels
+
+        if transformation_rate is not None and (transformation_rate > 0 and transformation_rate <= 1):
+            self.input_data = self.adstock_transformation_table(input_data)
+        else:
+            self.input_data = input_data
+
         self.model_type = model_type
         self.has_const = has_const
-        self.ad_channels = ad_channels
-        self.transformation_rate = transformation_rate
         self.metrics = metrics
         self.p_value_threshold = p_value_threshold
         self.X = None
@@ -49,11 +56,21 @@ class RegressionAnalysis:
             result.append(current_stock)
         return pd.Series(result)
 
-    def adstock_transformation_table(self):
+    def adstock_transformation_table(self, input_data):
         '''
-        adstock transformation for all marketing spending columns; will change input_data
+        adstock transformation for all marketing spending columns; will change input_data;
+        plot line chart for each variable
         '''
-        self.input_data[self.ad_channels] = self.input_data[self.ad_channels].apply(self.ad_stock_transformation, axis = 0)
+        import matplotlib.pyplot as plt
+        result_table = input_data[self.ad_channels].apply(self.ad_stock_transformation, axis = 0)
+        fig, axes = plt.subplots(len(self.ad_channels), 1, sharey=True)
+        fig.subplots_adjust(hspace=0.5)
+        fig.set_figheight(2 * len(self.ad_channels))
+        fig.set_figwidth(6)
+        for i, v in enumerate(self.ad_channels):
+            axes[i].plot(result_table.index, result_table[v])
+            axes[i].set_title(v)
+        return result_table
 
     def regression_prep(self):
         '''
@@ -76,6 +93,8 @@ class RegressionAnalysis:
 
         if self.has_const == 1:
             self.X['const'] = 1
+
+
 
     def main_model(self):
         '''
@@ -126,17 +145,26 @@ class RegressionAnalysis:
 
         return result
 
-    def predictor_coefficient_analysis(self):
-        predictors = self.result['predictors']
-        plt.rcParams['figure.figsize'] = ((len(predictors) - 1) * 2, int((len(predictors) - 1) * 1.6))
-        predictors['p_value_range'] = np.where(predictors.p_value <= 0.05, '<=0.05', '>0.05')
-        predictors['% increase in {}'.format(self.metrics)] = predictors['coefficient'] * 100
-        ax = sns.barplot(x="variable",
-                         y='% increase in {}'.format(self.metrics),
-                         hue="p_value_range",
-                         data=predictors[predictors.variable != 'const'],
-                         dodge=False)
-        ax.set_title('Percentage of metrics lifted by one unit increase of the predictor')
+    # def predictor_coefficient_analysis(self):
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #     predictors = self.result['predictors']
+    #     plt.rcParams['figure.figsize'] = ((len(predictors) - 1) * 2, int((len(predictors) - 1) * 1.6))
+    #     predictors['p_value_range'] = np.where(predictors.p_value <= 0.05, '<=0.05', '>0.05')
+    #     predictors['% increase in {}'.format(self.metrics)] = predictors['coefficient'] * 100
+    #     ax = sns.barplot(x="variable",
+    #                      y='% increase in {}'.format(self.metrics),
+    #                      hue="p_value_range",
+    #                      data=predictors[predictors.variable != 'const'],
+    #                      dodge=False)
+    #     ax.set_title('Percentage of metrics lifted by one unit increase of the predictor')
 
 
 

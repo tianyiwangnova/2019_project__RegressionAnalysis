@@ -1,4 +1,4 @@
-# Author: Tianyi Wang 
+# Author: Tianyi Wang (tianyi.wang@kindredgroup.com)
 # Last updated: 2019-05-02 
 
 import itertools
